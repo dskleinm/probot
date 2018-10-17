@@ -1,0 +1,60 @@
+GitHub Actions
+Heads Up! GitHub Actions is still in limited beta.
+
+GitHub Actions allows you to trigger workflows based on GitHub events, which makes it a great fit for running Probot Apps. To run a your app on GitHub Actions:
+
+Add a Dockerfile to your app:
+
+FROM node:10
+
+ENV PATH=$PATH:/app/node_modules/.bin
+WORKDIR /app
+COPY . .
+RUN npm install --production
+
+ENTRYPOINT ["probot", "receive"]
+CMD ["/app/index.js"]
+In the repository that you want to run the app, create a .github/main.workflow file that defines the action and listens for any events that your app depends on. For example, here is the workflow for @jasonetco's TODO:
+
+workflow "Check for TODOs in Pull Requests" {
+  on = "pull_request"
+  resolves = "TODO"
+}
+
+workflow "Check for TODOs on Push" {
+  on = "push"
+  resolves = "TODO"
+}
+
+action "TODO" {
+  uses = "jasonetco/todo"
+  secrets = ["GITHUB_TOKEN"]
+}
+There are a few caveats when running Probot Apps on GitHub Actions:
+
+The GitHub API token available to actions has a fixed set of permisisons, and only has access to the repository that triggered the action. app.auth() will always return a GitHub client authenticated for the current repository.
+probot/scheduler and other extensions that require long-running processes are not currently supported.
+Your app cannot expose HTTP routes
+Share the app
+The Probot website includes a list of featured apps. Consider adding your app to the website so others can discover and use it.
+
+Combining apps
+To deploy multiple apps in one instance, create a new app that has the existing apps listed as dependencies in package.json:
+
+{
+  "name": "my-probot-app",
+  "private": true,
+  "dependencies": {
+    "probot-autoresponder": "probot/autoresponder",
+    "probot-settings": "probot/settings"
+  },
+  "scripts": {
+    "start": "probot run"
+ },
+ "probot": {
+   "apps": [
+     "probot-autoresponder",
+     "probot-settings"
+   ]
+ }
+}
